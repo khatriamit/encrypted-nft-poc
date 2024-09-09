@@ -96,7 +96,7 @@ const NFTPage = ({
       method: "POST",
       headers: { "Content-type": "application/json" },
       body: JSON.stringify({
-        obfuscatedImageUrl: cipherURL.replace("_ciphertext", ""),
+        obfuscatedImageUrl: image,
         cipherUrl: cipherURL,
         ephemeral: Buffer.from(ephemeral).toString("hex"),
         ciphertext: Buffer.from(ciphertext).toString("hex"),
