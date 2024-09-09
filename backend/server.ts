@@ -12,13 +12,13 @@ import {
   generatePrivateKey,
 } from "./images/obfuscate";
 import * as crypto from "crypto";
-import { uploadCiphertext, deleteItem, uploadImage } from "./images/bucket";
+import { uploadCiphertext, deleteItem, uploadImage, uploadCipherTextWal, uploadImageWL } from "./images/bucket";
 import { generateProof } from "./images/proof";
 import { bls12_381 } from "@noble/curves/bls12-381";
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "35mb" }));
+app.use(express.json({ limit: "200mb" }));
 
 app.get("/", async (_req, res) => {
   // sanity check
@@ -57,7 +57,7 @@ app.post("/transfer_to", async (req, res) => {
     ciphertext,
     Uint8Array.from(Buffer.from(ownerUser.priv_key!, "hex"))
   );
-  const encryptionRandomness = Uint8Array.from(crypto.randomBytes(8));
+  const encryptionRandomness = Uint8Array.from(crypto.randomBytes(20));
   const reEncrypted = encryptSecretKeyBLS(
     secretKey,
     Uint8Array.from(Buffer.from(recipientUser.priv_key!, "hex")),
@@ -108,7 +108,6 @@ app.post("/obfuscate", async (req, res) => {
     image,
     type
   );
-
   let user = await prisma.user.findUnique({
     where: {
       id: seller,
@@ -123,21 +122,27 @@ app.post("/obfuscate", async (req, res) => {
       },
     });
   }
-  const encryptionRandomness = Uint8Array.from(crypto.randomBytes(8));
+  const encryptionRandomness = Uint8Array.from(crypto.randomBytes(20));
   const encryptedSecretKey = encryptSecretKeyBLS(
     secretKey,
     Uint8Array.from(Buffer.from(user.priv_key!, "hex")),
     encryptionRandomness
   );
-  const cipherUrl = await uploadCiphertext(ciphertext, imageName);
-  await uploadImage(obfuscatedImage, imageName);
+  const cipherUrl = await uploadCipherTextWal(ciphertext , imageName);
+
+  // const cipherUrl = await uploadCiphertext(ciphertext, imageName);
+  // await uploadImage(obfuscatedImage, imageName);
+
+  const imageUrl = await uploadImageWL(obfuscatedImage, imageName);
   return res.send({
     obfuscatedImage,
     cipherUrl,
+    imageUrl,
     ephemeral: encryptedSecretKey.ephemeral.toHex(),
     ciphertext: encryptedSecretKey.cipher.toHex(),
   });
 });
+
 app.post("/cancel_obfuscate", async (req, res) => {
   await deleteItem(req.body.cipherPath);
 });
@@ -151,19 +156,24 @@ app.post("/deobfuscate", async (req, res) => {
   });
   if (!user) return res.status(400).send({ message: "User not found" });
   let response = await fetch(cipherUrl);
+  console.log({response});
+  
   const ciphertextImg = await response.text();
+  let cipherVal = JSON.parse(ciphertextImg).cipher
+    
   response = await fetch(obfuscatedImageUrl);
   const blob = await response.blob();
   const obfuscatedImage = new Uint8Array(await blob.arrayBuffer());
+
   const secretKey = decryptSecretKeyBLS(
     ephemeral,
     ciphertext,
     Uint8Array.from(Buffer.from(user.priv_key!, "hex"))
   );
-
+  
   const deobfuscatedImage = await deobfuscate(
     obfuscatedImage,
-    ciphertextImg,
+    cipherVal,
     secretKey
   );
 
