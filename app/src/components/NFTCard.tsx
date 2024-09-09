@@ -6,6 +6,7 @@ import "../styles/tooltip.css";
 import SuiSymbol from "../../assets/sui-symbol.svg";
 interface NFTCardProps {
   image: string;
+  public_key: string;
   name: string;
   id: string;
   owner: string;

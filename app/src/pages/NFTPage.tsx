@@ -15,6 +15,7 @@ interface NFTPageProps {
   image: string;
   owner: string;
   cipherURL: string;
+  publicKey: string;
   ephemeral: number[];
   ciphertext: number[];
   close: () => void;
@@ -26,6 +27,7 @@ const NFTPage = ({
   image,
   owner,
   cipherURL,
+  publicKey,
   ephemeral,
   ciphertext,
   close,
@@ -100,7 +102,8 @@ const NFTPage = ({
         cipherUrl: cipherURL,
         ephemeral: Buffer.from(ephemeral).toString("hex"),
         ciphertext: Buffer.from(ciphertext).toString("hex"),
-        seller: account?.address,
+        // seller: account?.address,
+        seller: publicKey
       }),
     });
     const data = await response.json();
@@ -108,6 +111,7 @@ const NFTPage = ({
   };
 
   return (
+  
     <Flex direction="column">
       <Flex direction="row">
         <Button

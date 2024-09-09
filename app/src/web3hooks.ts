@@ -60,6 +60,7 @@ export const useMarket = () => {
         tx.pure.string(cipher_url),
         tx.pure(Array.from(Buffer.from(ephemeral, 'hex'))),
         tx.pure(Array.from(Buffer.from(ciphertext, 'hex'))),
+        tx.object("0x4116e7ce7afcb735df04caf506069c11d98add78a24b3a59561c40e73c751983"),
       ],
     });
 
@@ -107,5 +108,129 @@ export const useMarket = () => {
     return tx;
   }
 
-  return {getOwnedNFTs, createNFT, transferNFT};
+  // const getAllNFTs = async (id: string) => {
+  //   const response: any= await client.getObject({
+  //     id,
+  //     options:{
+  //       "showType": true,
+  //       "showOwner": true,
+  //       "showPreviousTransaction": true,
+  //       "showDisplay": false,
+  //       "showContent": true,
+  //       "showBcs": false,
+  //       "showStorageRebate": true
+  //     }
+  //   });
+    
+  //   let nfts_list: any = response.data.content.fields.nft_ids.fields.contents
+  //   console.log({nfts_list});
+
+  //   const nfts = nfts_list.map(async (item: any) => {
+  //     const ret: any = await client.getObject({
+  //       id: item,
+  //       options:{
+  //         "showType": true,
+  //         "showOwner": true,
+  //         "showPreviousTransaction": true,
+  //         "showDisplay": false,
+  //         "showContent": true,
+  //         "showBcs": false,
+  //         "showStorageRebate": true
+  //       }
+  //     }); 
+      
+  //     const res = ret.data?.content.fields;
+  //     res.id = ret.data?.content.fields.id;
+  //     res.ephemeral = res.encrypted_master_key.fields.ephemeral.fields.bytes;
+  //     res.ciphertext = res.encrypted_master_key.fields.ciphertext.fields.bytes;
+  //     return res;
+  //   });
+  //   console.log({NFT: nfts});
+    
+  //   return nfts
+  // };
+
+  // Define the type of NFT response data
+interface NFTResponse {
+  id: string;
+  name: string;
+  image_url: string;
+  ciphertext_url: string;
+  ephemeral: string;
+  ciphertext: string;
+  public_key: string;
+}
+
+// Define the type of the response from `client.getObject`
+interface GetObjectResponse {
+  data: {
+    content: {
+      fields: {
+        nft_ids: {
+          fields: {
+            contents: string[];
+          }
+        };
+      }
+    };
+  };
+}
+
+const getAllNFTs = async (id: string): Promise<NFTResponse[]> => {
+  try {
+    const response: GetObjectResponse = await client.getObject({
+      id,
+      options: {
+        showType: true,
+        showOwner: true,
+        showPreviousTransaction: true,
+        showDisplay: false,
+        showContent: true,
+        showBcs: false,
+        showStorageRebate: true
+      }
+    });
+
+    const nftsList: string[] = response.data.content.fields.nft_ids.fields.contents;
+
+    // Fetch details for each NFT and use `Promise.all` to handle multiple promises
+    const nfts: NFTResponse[] = await Promise.all(
+      nftsList.map(async (item: string) => {
+        const ret: any = await client.getObject({
+          id: item,
+          options: {
+            showType: true,
+            showOwner: true,
+            showPreviousTransaction: true,
+            showDisplay: false,
+            showContent: true,
+            showBcs: false,
+            showStorageRebate: true
+          }
+        });
+
+        const fields = ret.data?.content?.fields;
+
+        return {
+          id: fields?.id || '',
+          name: fields?.name || '',
+          image_url: fields?.image_url || '',
+          ciphertext_url: fields?.ciphertext_url || '',
+          ephemeral: fields?.encrypted_master_key?.fields?.ephemeral?.fields?.bytes || '',
+          ciphertext: fields?.encrypted_master_key?.fields?.ciphertext?.fields?.bytes || '',
+          public_key: fields?.public_key || '',
+        };
+      })
+    );
+
+    console.log({ NFT: nfts });
+
+    return nfts;
+  } catch (error) {
+    console.error('Error fetching NFTs:', error);
+    return [];
+  }
+};
+
+  return {getOwnedNFTs, createNFT, transferNFT, getAllNFTs};
 };

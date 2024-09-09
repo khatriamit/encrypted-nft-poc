@@ -11,7 +11,7 @@ import NFTCard from "../components/NFTCard";
 import "../styles/marketplace.css";
 
 export const PersonalSpace = () => {
-  const { getOwnedNFTs } = useMarket();
+  const { getOwnedNFTs,  getAllNFTs } = useMarket();
   const [isFilterPushed] = useState(false);
   const [nftIndex, setNftIndex] = useState(-1);
 
@@ -21,7 +21,12 @@ export const PersonalSpace = () => {
     queryKey: [account?.address, nftIndex],
     queryFn: async () => {
       if (account?.address === undefined) return [];
-      return await getOwnedNFTs(account?.address);
+      // let data =  await getOwnedNFTs(account?.address);
+      let data = await getAllNFTs("0x4116e7ce7afcb735df04caf506069c11d98add78a24b3a59561c40e73c751983");
+      console.log({loggerData: data});
+      return data;
+      
+      return await getAllNFTs("0x30983bf58da1138106849f384cce32b2065dc55af279c0eea81244fbe222b14d")
     },
     // select:
   });
@@ -56,7 +61,8 @@ export const PersonalSpace = () => {
           grow="1"
           shrink="0"
           style={{ flexBasis: "20%" }}
-        >
+        > 
+        {/* console.log({data}); */}
           {data &&
             data.map((item, index) => {
               return (
@@ -64,6 +70,7 @@ export const PersonalSpace = () => {
                   key={index}
                   name={item.name}
                   image={item.image_url}
+                  public_key={item.public_key}
                   id={item.id}
                   owner={account?.address!}
                   index={index}
@@ -83,6 +90,7 @@ export const PersonalSpace = () => {
           id={nft.id}
           name={nft.name}
           image={nft.image_url}
+          publicKey={nft.public_key}
           owner={nft.seller}
           cipherURL={nft.ciphertext_url}
           ephemeral={nft.ephemeral}
