@@ -16,3 +16,4 @@ cli/original_nft.png
 # misc
 .env
 backend/prisma/dev.db
+publish.res.json
